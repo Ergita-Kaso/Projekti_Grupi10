@@ -1,0 +1,244 @@
+<?php
+session_start();
+error_reporting(0);
+include('includes/config.php');
+include_once(__DIR__ . '/../includes/validation-helper.php');
+if(strlen($_SESSION['alogin'])==0)
+	{	
+header('location:index.php');
+}
+else{
+$pid=intval($_GET['pid']);	
+if(isset($_POST['submit']))
+{
+$pname=dreamCleanInput($_POST['packagename']);
+$ptype=dreamCleanInput($_POST['packagetype']);	
+$plocation=dreamCleanInput($_POST['packagelocation']);
+$pprice=dreamCleanInput($_POST['packageprice']);	
+$pfeatures=dreamCleanInput($_POST['packagefeatures']);
+$pdetails=dreamCleanInput($_POST['packagedetails']);	
+$pimage=$_FILES["packageimage"]["name"];
+if(!dreamTextLength($pname, 3, 120)) {
+$error="Emri i paketes duhet te kete 3 deri ne 120 karaktere.";
+} else if(!dreamTextLength($ptype, 3, 80)) {
+$error="Tipi i paketes duhet te kete 3 deri ne 80 karaktere.";
+} else if(!dreamTextLength($plocation, 2, 120)) {
+$error="Destinacioni duhet te kete 2 deri ne 120 karaktere.";
+} else if(!dreamValidPositivePrice($pprice)) {
+$error="Cmimi duhet te jete numer pozitiv i vlefshem.";
+} else if(!dreamTextLength($pfeatures, 3, 255)) {
+$error="Tiparet duhet te kene 3 deri ne 255 karaktere.";
+} else if(!dreamTextLength($pdetails, 10, 3000)) {
+$error="Detajet duhet te kene 10 deri ne 3000 karaktere.";
+} else {
+$sql="update TblTourPackages set PackageName=:pname,PackageType=:ptype,PackageLocation=:plocation,PackagePrice=:pprice,PackageFetures=:pfeatures,PackageDetails=:pdetails where PackageId=:pid";
+$query = $dbh->prepare($sql);
+$query->bindParam(':pname',$pname,PDO::PARAM_STR);
+$query->bindParam(':ptype',$ptype,PDO::PARAM_STR);
+$query->bindParam(':plocation',$plocation,PDO::PARAM_STR);
+$query->bindParam(':pprice',$pprice,PDO::PARAM_STR);
+$query->bindParam(':pfeatures',$pfeatures,PDO::PARAM_STR);
+$query->bindParam(':pdetails',$pdetails,PDO::PARAM_STR);
+$query->bindParam(':pid',$pid,PDO::PARAM_STR);
+$query->execute();
+$msg="Paketa u ndryshua me sukses!";
+}
+}
+
+	?>
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>Krijimi i faqeve</title>
+<script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
+<link href="css/bootstrap.min.css" rel='stylesheet' type='text/css' />
+<link href="css/style.css" rel='stylesheet' type='text/css' />
+<link rel="stylesheet" href="css/morris.css" type="text/css"/>
+<link href="css/font-awesome.css" rel="stylesheet"> 
+<script src="js/jquery-2.1.4.min.js"></script>
+<link href='//fonts.googleapis.com/css?family=Roboto:700,500,300,100italic,100,400' rel='stylesheet' type='text/css'/>
+<link href='//fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" href="css/icon-font.min.css" type='text/css' />
+  <style>
+		.errorWrap {
+    padding: 10px;
+    margin: 0 0 20px 0;
+    background: #fff;
+    border-left: 4px solid #dd3d36;
+    -webkit-box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+}
+.succWrap{
+    padding: 10px;
+    margin: 0 0 20px 0;
+    background: #fff;
+    border-left: 4px solid #5cb85c;
+    -webkit-box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+}
+		</style>
+
+</head> 
+<body>
+   <div class="page-container">
+
+<div class="left-content">
+	   <div class="mother-grid-inner">
+
+<?php include('includes/header.php');?>
+							
+				     <div class="clearfix"> </div>	
+				</div>
+
+	<ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.php">Home</a><i class="fa fa-angle-right"></i>Perditeso Paketen </li>
+            </ol>
+
+ 	<div class="grid-form">
+ <div class="grid-form1">
+  	       <h3>Perditeso Paketen</h3>
+  	        	  <?php if($error){?><div class="errorWrap"><strong>Gabim!</strong>  <?php echo htmlentities($error); ?> </div><?php } 
+				else if($msg){?><div class="succWrap"><strong>Sukses!</strong>  <?php echo htmlentities($msg); ?> </div><?php }?>
+  	         <div class="tab-content">
+						<div class="tab-pane active" id="horizontal-form">
+						
+<?php 
+$pid=intval($_GET['pid']);
+$sql = "SELECT * from TblTourPackages where PackageId=:pid";
+$query = $dbh -> prepare($sql);
+$query -> bindParam(':pid', $pid, PDO::PARAM_STR);
+$query->execute();
+$results=$query->fetchAll(PDO::FETCH_OBJ);
+$cnt=1;
+if($query->rowCount() > 0)
+{
+foreach($results as $result)
+{	?>
+
+							<form class="form-horizontal" name="package" method="post" enctype="multipart/form-data">
+								<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Emri Paketes</label>
+									<div class="col-sm-8">
+										<input type="text" class="form-control1" name="packagename" id="packagename" placeholder="Create Package" value="<?php echo htmlentities($result->PackageName);?>" minlength="3" maxlength="120" required>
+									</div>
+								</div>
+<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Tipi Paketes</label>
+									<div class="col-sm-8">
+										<input type="text" class="form-control1" name="packagetype" id="packagetype" placeholder=" Package Type eg- Family Package / Couple Package" value="<?php echo htmlentities($result->PackageType);?>" minlength="3" maxlength="80" required>
+									</div>
+								</div>
+
+<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Destinacioni Paketes</label>
+									<div class="col-sm-8">
+										<input type="text" class="form-control1" name="packagelocation" id="packagelocation" placeholder=" Package Location" value="<?php echo htmlentities($result->PackageLocation);?>" minlength="2" maxlength="120" required>
+									</div>
+								</div>
+
+<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Cmimi Paketes</label>
+									<div class="col-sm-8">
+										<input type="number" class="form-control1" name="packageprice" id="packageprice" placeholder=" Package Price is USD" value="<?php echo htmlentities($result->PackagePrice);?>" min="0.01" max="999999.99" step="0.01" required>
+									</div>
+								</div>
+
+<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Tiparet e Paketes</label>
+									<div class="col-sm-8">
+										<input type="text" class="form-control1" name="packagefeatures" id="packagefeatures" placeholder="Package Features Eg-free Pickup-drop facility" value="<?php echo htmlentities($result->PackageFetures);?>" minlength="3" maxlength="255" required>
+									</div>
+								</div>		
+
+
+<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Detajet e Paketes</label>
+									<div class="col-sm-8">
+										<textarea class="form-control" rows="5" cols="50" name="packagedetails" id="packagedetails" placeholder="Package Details" minlength="10" maxlength="3000" required><?php echo htmlentities($result->PackageDetails);?></textarea> 
+									</div>
+								</div>															
+<div class="form-group">
+<label for="focusedinput" class="col-sm-2 control-label">Foto Paketes</label>
+<div class="col-sm-8">
+<img src="pacakgeimages/<?php echo htmlentities($result->PackageImage);?>" width="200">&nbsp;&nbsp;&nbsp;<a href="change-image.php?imgid=<?php echo htmlentities($result->PackageId);?>">Change Image</a>
+</div>
+</div>
+
+<div class="form-group">
+									<label for="focusedinput" class="col-sm-2 control-label">Data e modifikimit te fundit</label>
+									<div class="col-sm-8">
+<?php echo htmlentities($result->UpdationDate);?>
+									</div>
+								</div>		
+								<?php }} ?>
+
+								<div class="row">
+			<div class="col-sm-8 col-sm-offset-2">
+				<button type="submit" name="submit" class="btn-primary btn">Perditeso</button> <a href="manage-packages.php" class="btn btn-default">Kthehu te paketat</a>
+			</div>
+		</div>
+	</div>
+</form>
+      <div class="panel-footer">
+		
+	 </div>
+    </form>
+  </div>
+ 	</div>
+ 	
+
+	<script>
+		$(document).ready(function() {
+			 var navoffeset=$(".header-main").offset().top;
+			 $(window).scroll(function(){
+				var scrollpos=$(window).scrollTop(); 
+				if(scrollpos >=navoffeset){
+					$(".header-main").addClass("fixed");
+				}else{
+					$(".header-main").removeClass("fixed");
+				}
+			 });
+			 
+		});
+		</script>
+	
+<div class="inner-block">
+
+</div>
+
+<?php include('includes/footer.php');?>
+
+</div>
+</div>
+ 
+					<?php include('includes/sidebarmenu.php');?>
+							  <div class="clearfix"></div>		
+							</div>
+							<script>
+							var toggle = true;
+										
+							$(".sidebar-icon").click(function() {                
+							  if (toggle)
+							  {
+								$(".page-container").addClass("sidebar-collapsed").removeClass("sidebar-collapsed-back");
+								$("#menu span").css({"position":"absolute"});
+							  }
+							  else
+							  {
+								$(".page-container").removeClass("sidebar-collapsed").addClass("sidebar-collapsed-back");
+								setTimeout(function() {
+								  $("#menu span").css({"position":"relative"});
+								}, 400);
+							  }
+											
+											toggle = !toggle;
+										});
+							</script>
+
+<script src="js/jquery.nicescroll.js"></script>
+<script src="js/scripts.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
+</body>
+</html>
+<?php } ?>
